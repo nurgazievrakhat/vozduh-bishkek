@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Страница не найдена — Воздух Бишкека</title>
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<style>
+@font-face { font-family: 'Geologica'; font-display: swap; font-weight: 100 900; src: url(/assets/fonts/geologica-cyrillic-shrp-normal.woff2) format('woff2'); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: 'Geologica'; font-display: swap; font-weight: 100 900; src: url(/assets/fonts/geologica-latin-shrp-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
+:root { color-scheme: light; --haze: #B5A68A; --ink: #2B2824; --cinder: #4A4034; --snow: #F4F7F9; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; display: grid; place-items: center; background: var(--haze); color: var(--ink); font-family: 'Geologica', system-ui, sans-serif; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 34rem; display: flex; flex-direction: column; gap: 16px; }
+h1 { margin: 0; font-size: clamp(40px, 8vw, 72px); line-height: 1; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance; }
+p { margin: 0; font-size: 18px; line-height: 28px; color: var(--cinder); text-wrap: pretty; }
+a { align-self: flex-start; display: inline-flex; align-items: center; min-height: 48px; padding: 12px 24px; border-radius: 9999px; background: var(--snow); color: var(--ink); font-weight: 600; text-decoration: none; }
+a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Такой страницы нет</h1>
+<p>Возможно, ссылка устарела или в адресе опечатка. Данные о воздухе на главной.</p>
+<a href="/" id="home">Открыть главную</a>
+</main>
+<script>
+  // on a github.io project address the site lives one folder down
+  if (/\.github\.io$/.test(location.hostname)) {
+    var first = location.pathname.split('/')[1];
+    if (first) document.getElementById('home').href = '/' + first + '/';
+  }
+</script>
+</body>
+</html>

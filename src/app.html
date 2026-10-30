@@ -1,0 +1,1210 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Воздух Бишкека</title>
+<meta name="description" content="Качество воздуха в Бишкеке по городским станциям: видно ли сегодня горы, сколько это сигарет в день, карта районов и история по часам. Обновляется каждый час.">
+<meta name="theme-color" content="#B4D3E6">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Воздух Бишкека">
+<meta property="og:description" content="Видно ли сегодня горы, сколько это сигарет в день и где в городе легче дышать.">
+<meta property="og:image" content="assets/og.png">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/geologica-cyrillic-shrp-normal.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face { font-family: 'Geologica'; font-style: normal; font-display: swap; font-weight: 100 900; src: url(assets/fonts/geologica-cyrillic-ext-shrp-normal.woff2) format('woff2'); unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F; }
+@font-face { font-family: 'Geologica'; font-style: normal; font-display: swap; font-weight: 100 900; src: url(assets/fonts/geologica-cyrillic-shrp-normal.woff2) format('woff2'); unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: 'Geologica'; font-style: normal; font-display: swap; font-weight: 100 900; src: url(assets/fonts/geologica-latin-shrp-normal.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+/* Layout: an instrument, not a landing page. Desktop: the mountain scene is pinned on the left and shows the air of the chosen place; the right panel holds the map, stations, history and notes. Phone: scene on top, panel below, a dock returns to the mountains. One light panel by choice; the scene itself turns to night after sunset. */
+:root {
+  color-scheme: light;
+  --paper: #EEECE8;
+  --card: #F7F6F3;
+  --snow: #F4F7F9;
+  --ink: #2B2824;
+  --cinder: #5E5140;
+  --soot: #3A3634;
+  --ember: #F2A33A;
+  --rule: #D6D2CB;
+  --track: #DFDBD4;
+  --surface: #E2DFD8;
+  --on-dark: #D4D0C8;
+  --line: #6B4B2F;
+  --warn: #8A4B12;
+  --font: 'Geologica', 'Golos Text', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 24px; font-variation-settings: "SHRP" 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+a { color: var(--ink); }
+a:hover { color: var(--cinder); }
+button { font-family: inherit; }
+:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.num { font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+@media (min-width: 768px) { .gut { padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); } }
+
+/* ---------- Stage ---------- */
+.stage { position: relative; overflow: hidden; display: flex; flex-direction: column; height: clamp(640px, 90svh, 800px); background: var(--stage-sky, #B4D3E6); color: var(--s-ink); --s-ink: #2B2824; --s-sub: #3B3631; --stage-sky: #B4D3E6; }
+.stage[data-night="true"] { --s-ink: #F4F7F9; --s-sub: #D4D0C8; }
+.scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.scene .plane { transition: transform 500ms var(--ease); }
+.scene .sheet, .scene .sun, #moon, #stars, #lights { transition: opacity 1800ms var(--ease); }
+.scene .smog { transition: opacity 2000ms var(--ease) 1400ms; }
+.scene .late { transition: opacity 1200ms var(--ease) 2000ms; }
+.smog-a { animation: drift-a 38s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+.smog-b { animation: drift-b 52s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+.smog-c { animation: drift-c 70s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate; }
+@keyframes drift-a { from { transform: translateX(-60px); } to { transform: translateX(60px); } }
+@keyframes drift-b { from { transform: translateX(80px); } to { transform: translateX(-80px); } }
+@keyframes drift-c { from { transform: translateX(-100px); } to { transform: translateX(100px); } }
+.tag text { font: 500 13px var(--font); text-anchor: middle; }
+.stage > .gut { position: relative; }
+.stage-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 16px; padding-block: 20px; }
+.brand { font-size: 18px; line-height: 28px; font-weight: 600; color: var(--s-ink); text-decoration: none; }
+.brand:hover { color: var(--s-ink); }
+.status { margin: 0; display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 10px; border-radius: 9999px; background: rgba(244, 247, 249, 0.86); color: var(--ink); font-size: 14px; line-height: 20px; }
+.status .dot { width: 8px; height: 8px; border-radius: 9999px; background: var(--ember); box-shadow: 0 0 0 3px rgba(242, 163, 58, 0.3); flex: none; }
+.status[data-state="stale"] { color: var(--warn); }
+.status[data-state="stale"] .dot { background: var(--warn); box-shadow: none; }
+.status[data-state="saved"] .dot, .status[data-state="loading"] .dot { background: var(--cinder); box-shadow: none; }
+.stage-head { padding-top: 16px; }
+.place { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 16px; line-height: 24px; font-weight: 500; color: var(--s-sub); }
+.place-btn { min-height: 36px; padding: 6px 14px; border-radius: 9999px; border: 1px solid currentColor; background: transparent; color: var(--s-ink); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; transition: background-color 300ms var(--ease); }
+.place-btn:hover { background: rgba(127, 127, 127, 0.14); }
+.stage h1 { margin: 8px 0 0; max-width: 11ch; font-size: clamp(44px, 5.2vw, 84px); line-height: 1; font-weight: 600; letter-spacing: -0.03em; font-variation-settings: "SHRP" var(--shrp, 60); transition: font-variation-settings 1800ms var(--ease); text-shadow: 0 0 28px var(--stage-sky); }
+.stage-read { margin-top: auto; padding-bottom: 28px; color: var(--snow); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 32px; align-items: end; }
+.big { margin: 0; display: flex; align-items: flex-start; gap: 10px; }
+.big-num { font-size: clamp(64px, 11vh, 124px); line-height: 0.9; font-weight: 300; letter-spacing: -0.04em; font-variation-settings: "SHRP" var(--shrp, 60); transition: font-variation-settings 1800ms var(--ease); }
+.big-unit { padding-top: 6px; font-size: 14px; line-height: 18px; color: var(--on-dark); }
+.who { margin: 10px 0 0; max-width: 32ch; font-size: 16px; line-height: 22px; color: var(--on-dark); }
+.pack { --cl: 64px; display: grid; grid-template-columns: repeat(5, var(--cl)); gap: 8px 6px; }
+.cig { display: flex; width: var(--cl); height: 9px; }
+.cig .f { width: 16px; flex: none; background: #C99A5B; border-radius: 2px 0 0 2px; }
+.cig .p { background: var(--snow); transition: width 500ms var(--ease); }
+.cig .full { flex: 1; border-radius: 0 2px 2px 0; }
+.cig .e { width: 3px; flex: none; background: var(--ember); box-shadow: 0 0 8px 1px rgba(242, 163, 58, 0.7); }
+.cig .a { width: 5px; flex: none; background: #8E8984; border-radius: 0 2px 2px 0; }
+.cig-line { margin: 14px 0 0; font-size: 20px; line-height: 28px; font-weight: 500; }
+.cig-src { margin: 2px 0 0; font-size: 13px; line-height: 18px; color: var(--on-dark); }
+@media (min-width: 1100px) {
+  .app { display: grid; grid-template-columns: minmax(0, 52fr) minmax(0, 48fr); align-items: start; }
+  .stage { position: sticky; top: env(safe-area-inset-top, 0px); height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); min-height: 620px; }
+  .only-narrow { display: none !important; }
+}
+@media (max-width: 1099px) { .only-wide { display: none !important; } }
+@media (max-width: 640px) {
+  .stage { height: 780px; }
+  .stage-top { padding-block: 16px; }
+  .brand { font-size: 16px; line-height: 24px; }
+  .stage h1 { font-size: 46px; }
+  .stage-read { grid-template-columns: minmax(0, 1fr); gap: 14px; padding-bottom: 20px; }
+  .big-num { font-size: 64px; }
+  .who { margin-top: 6px; font-size: 15px; line-height: 20px; }
+  .who-cat, .cig-src { display: none; }
+  .pack { --cl: min(64px, calc((100vw - 32px - 36px) / 7)); grid-template-columns: repeat(7, var(--cl)); gap: 7px 6px; }
+  .cig-line { margin-top: 10px; font-size: 18px; line-height: 24px; }
+}
+
+/* ---------- Panel ---------- */
+.panel { min-width: 0; padding-block: 8px 64px; }
+.panel-in { max-width: 760px; }
+.sec { padding-block: 32px; display: flex; flex-direction: column; gap: 20px; }
+.sec + .sec { border-top: 1px solid var(--rule); }
+.sec-head { display: flex; flex-direction: column; gap: 8px; }
+.sec-head h2 { margin: 0; font-size: 30px; line-height: 36px; font-weight: 600; letter-spacing: -0.015em; font-variation-settings: "SHRP" 40; }
+.sec-head p { margin: 0; max-width: 60ch; color: var(--cinder); }
+h3 { margin: 0; font-size: 18px; line-height: 28px; font-weight: 600; }
+@media (max-width: 1099px) { .panel { padding-bottom: 112px; } }
+@media (max-width: 640px) { .sec-head h2 { font-size: 26px; line-height: 32px; } }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 44px; padding: 8px 16px; border-radius: 9999px; border: 1px solid var(--soot); background: transparent; color: var(--ink); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background-color 300ms var(--ease); }
+.chip:hover { background: rgba(58, 54, 52, 0.08); }
+.chip:active, .row-btn:active, .seg button:active { transform: translateY(1px); }
+.chip[aria-pressed="true"] { background: var(--soot); color: var(--snow); }
+.chip .sw { width: 10px; height: 10px; border-radius: 9999px; flex: none; box-shadow: 0 0 0 1.5px var(--snow); }
+.seg { display: inline-flex; align-self: flex-start; padding: 4px; gap: 4px; border-radius: 9999px; background: var(--track); }
+.seg button { min-height: 36px; padding: 6px 14px; border: 0; border-radius: 9999px; background: transparent; color: var(--ink); font-size: 14px; line-height: 20px; font-weight: 500; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--soot); color: var(--snow); }
+.seg button:not([aria-pressed="true"]):hover { background: rgba(58, 54, 52, 0.08); }
+.map-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.map-hint { margin: 0; font-size: 14px; line-height: 20px; color: var(--cinder); }
+
+/* Map */
+.map { position: relative; width: 100%; height: 420px; border-radius: 16px; overflow: hidden; background: var(--surface); cursor: pointer; touch-action: manipulation; }
+.map canvas, .map svg { position: absolute; left: 0; top: 0; display: block; }
+.map svg text { font-family: var(--font); }
+.m-badge text { font-size: 12px; font-weight: 600; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.m-area { font-size: 12px; font-weight: 500; fill: var(--cinder); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.m-name { font-size: 14px; font-weight: 600; fill: var(--ink); paint-order: stroke; stroke: var(--snow); stroke-width: 4px; stroke-linejoin: round; }
+.m-meta { font-size: 12px; fill: var(--cinder); }
+.tip { position: absolute; z-index: 2; min-width: 172px; max-width: 250px; padding: 10px 12px; border-radius: 12px; background: var(--snow); color: var(--ink); box-shadow: 0 8px 24px rgba(43, 40, 36, 0.18); pointer-events: none; font-size: 14px; line-height: 20px; }
+.tip strong { display: block; font-size: 18px; line-height: 24px; font-weight: 600; }
+.tip span { display: block; }
+.tip .sub { color: var(--cinder); }
+.legend { display: flex; flex-direction: column; gap: 6px; }
+.lg-bar, .lg-ticks { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); }
+.lg-bar { gap: 2px; }
+.lg-bar span { height: 12px; }
+.lg-bar span:first-child { border-radius: 9999px 0 0 9999px; }
+.lg-bar span:last-child { border-radius: 0 9999px 9999px 0; }
+.lg-ticks { font-size: 12px; line-height: 16px; color: var(--cinder); }
+.lg-group { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); font-size: 12px; line-height: 16px; color: var(--cinder); }
+.lg-group span { grid-column: 5 / span 3; border-top: 1px solid var(--cinder); padding-top: 4px; text-align: center; }
+.note { margin: 0; max-width: 64ch; font-size: 14px; line-height: 20px; color: var(--cinder); }
+
+/* Stations */
+.rank-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px 32px; }
+.rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.row-btn { width: 100%; display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-areas: "n name val" ". bar bar"; gap: 4px 10px; align-items: center; padding: 10px 12px 12px 8px; border: 0; border-radius: 12px; background: transparent; color: var(--ink); text-align: left; cursor: pointer; transition: background-color 300ms var(--ease); }
+.row-btn:hover { background: rgba(58, 54, 52, 0.06); }
+.row-btn[aria-pressed="true"] { background: var(--card); box-shadow: inset 0 0 0 1.5px var(--soot); }
+.row-n { grid-area: n; font-size: 14px; color: var(--cinder); text-align: right; }
+.row-name { grid-area: name; min-width: 0; }
+.row-name b { display: block; font-size: 16px; line-height: 22px; font-weight: 600; }
+.row-name small { display: block; font-size: 13px; line-height: 18px; color: var(--cinder); overflow-wrap: anywhere; }
+.row-val { grid-area: val; text-align: right; white-space: nowrap; }
+.row-val b { font-size: 18px; line-height: 22px; font-weight: 600; }
+.row-val small { display: block; font-size: 13px; line-height: 18px; color: var(--cinder); }
+.row-bar { grid-area: bar; height: 6px; border-radius: 9999px; background: var(--track); }
+.row-bar i { display: block; height: 6px; border-radius: 9999px; }
+.row-flag { grid-column: 2 / -1; display: flex; gap: 6px; align-items: flex-start; font-size: 13px; line-height: 18px; color: var(--cinder); }
+.row-flag svg { flex: none; margin-top: 1px; }
+.more { align-self: flex-start; min-height: 44px; padding: 10px 20px; border-radius: 9999px; border: 1px solid var(--soot); background: transparent; color: var(--ink); font-size: 16px; line-height: 24px; font-weight: 600; cursor: pointer; }
+.more:hover { background: rgba(58, 54, 52, 0.08); }
+.all-wrap { display: flex; flex-direction: column; gap: 12px; }
+
+/* Trend */
+.chart { position: relative; width: 100%; height: 280px; }
+.chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.chart text { font-family: var(--font); font-size: 12px; fill: var(--cinder); }
+.chart .end { font-size: 14px; font-weight: 600; fill: var(--ink); }
+.c-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; line-height: 20px; color: var(--cinder); }
+.c-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.c-legend i { width: 18px; height: 2px; border-radius: 2px; }
+.empty { margin: 0; padding: 20px; border-radius: 16px; background: var(--card); color: var(--cinder); }
+.table-view summary { cursor: pointer; font-weight: 500; min-height: 44px; display: flex; align-items: center; }
+.tbl-wrap { overflow-x: auto; max-height: 320px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; line-height: 20px; }
+th, td { text-align: left; padding: 8px 16px 8px 0; border-bottom: 1px solid var(--rule); }
+th { font-weight: 500; color: var(--cinder); }
+
+/* About */
+.cats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px 24px; }
+.cats li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 2px 10px; align-items: baseline; }
+.cats .sw { width: 14px; height: 14px; border-radius: 4px; align-self: center; }
+.cats b { font-size: 15px; line-height: 22px; font-weight: 600; }
+.cats small { grid-column: 2; font-size: 13px; line-height: 18px; color: var(--cinder); }
+.facts { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 16px 32px; }
+.facts div { display: flex; flex-direction: column; gap: 4px; }
+.facts dt { font-weight: 600; }
+.facts dd { margin: 0; color: var(--cinder); font-size: 15px; line-height: 22px; }
+
+/* Dock (phone and tablet) */
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); border: 0; background: var(--soot); color: var(--snow); text-align: left; cursor: pointer; transform: translateY(0); transition: transform 500ms var(--ease); }
+.dock[data-show="false"] { transform: translateY(110%); }
+.dock .sw { width: 14px; height: 14px; border-radius: 9999px; flex: none; box-shadow: 0 0 0 2px var(--snow); }
+.dock-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dock-txt b { font-size: 16px; line-height: 22px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock-txt span { font-size: 13px; line-height: 18px; color: var(--on-dark); }
+.dock-go { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 9999px; background: var(--snow); color: var(--ink); font-size: 14px; line-height: 20px; font-weight: 600; flex: none; }
+@media (min-width: 1100px) { .dock { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .scene .plane, .scene .sheet, .scene .sun, #moon, #stars, #lights, .scene .smog, .scene .late, .stage h1, .big-num, .cig .p, .dock, .chip, .row-btn { transition: none; }
+  .smog-a, .smog-b, .smog-c { animation: none; }
+}
+a.sr:focus { position: fixed; z-index: 50; left: 16px; top: calc(16px + env(safe-area-inset-top, 0px)); width: auto; height: auto; clip: auto; padding: 8px 12px; border-radius: 8px; background: var(--snow); color: var(--ink); }
+.foot { margin: 0; padding-block: 24px 0; border-top: 1px solid var(--rule); font-size: 14px; line-height: 20px; color: var(--cinder); display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.status[data-state="backup"] .dot { background: var(--soot); box-shadow: 0 0 0 3px rgba(58, 54, 52, 0.25); }
+</style>
+</head>
+<body>
+<a class="sr" href="#panel">Перейти к карте и станциям</a>
+<div class="app" id="top">
+<header class="stage" id="stage" data-night="false">
+<!--SCENE-->
+<div class="gut stage-top">
+<a class="brand" href="#top">Воздух Бишкека</a>
+<p class="status" id="status" data-state="loading"><span class="dot" aria-hidden="true"></span><span id="status-text">Загружаем данные станций</span></p>
+</div>
+<div class="gut stage-head">
+<p class="place"><span id="place-name">Весь город</span><button type="button" class="place-btn" id="place-reset" hidden>Показать весь город</button><a class="place-btn only-narrow" id="place-pick" href="#pick">Выбрать место</a></p>
+<h1 id="headline">Смотрим на горы</h1>
+</div>
+<div class="gut stage-read">
+<div>
+<p class="big"><span class="big-num num" id="big-num">…</span><span class="big-unit">мкг/м³<br>PM2.5</span></p>
+<p class="who" id="who">Собираем показания станций города и пригородов.</p>
+</div>
+<div>
+<div class="pack" id="pack" role="img" aria-label="Сигареты за сутки"></div>
+<p class="cig-line" id="cig-line"></p>
+<p class="cig-src">Пересчёт Berkeley Earth: 22 мкг/м³ за сутки ≈ 1 сигарета</p>
+</div>
+</div>
+</header>
+
+<main class="panel" id="panel">
+<div class="gut panel-in">
+
+<section class="sec" id="pick" aria-labelledby="pick-title">
+<div class="sec-head">
+<h2 id="pick-title">Откуда смотреть на горы</h2>
+<p><span class="only-wide">Нажмите на станцию на карте или в списке. Горы слева покажут воздух в этом месте.</span><span class="only-narrow">Нажмите на станцию на карте или в списке. Горы наверху покажут воздух в этом месте.</span></p>
+</div>
+<div class="chips" id="quick"></div>
+<div class="map-bar">
+<div class="seg" role="group" aria-label="Масштаб карты">
+<button type="button" id="zoom-city" aria-pressed="true">Весь город</button>
+<button type="button" id="zoom-center" aria-pressed="false">Центр</button>
+</div>
+<p class="map-hint" id="map-hint">Цифры на карте: PM2.5, мкг/м³</p>
+</div>
+<div class="map" id="map" tabindex="0" role="group" aria-label="Карта станций. Стрелки выбирают соседнюю станцию, Escape возвращает весь город.">
+<canvas id="field" aria-hidden="true"></canvas>
+<svg id="map-svg" aria-hidden="true"></svg>
+<div class="tip" id="tip" hidden></div>
+</div>
+<div class="legend" aria-label="Шкала цветов карты, PM2.5 мкг/м³">
+<div class="lg-bar" id="lg-bar"></div>
+<div class="lg-ticks num" id="lg-ticks"></div>
+<div class="lg-group"><span>«Очень вредно» по шкале EPA</span></div>
+</div>
+<p class="note">Каждая станция закрашивает участок вокруг себя, не дальше 2 км. Чем темнее участок, тем грязнее воздух. Станции с пунктирной обводкой сильно расходятся с соседями: их участки не закрашены.</p>
+<p class="sr" aria-live="polite" id="live"></p>
+</section>
+
+<section class="sec" id="stations" aria-labelledby="st-title">
+<div class="sec-head">
+<h2 id="st-title">Станции</h2>
+<p id="st-lede">Нажмите на строку, чтобы посмотреть на горы из этого места.</p>
+</div>
+<div class="rank-cols">
+<div><h3>Тяжелее всего</h3><ol class="rows" id="worst"></ol></div>
+<div><h3>Легче всего</h3><ol class="rows" id="best"></ol></div>
+</div>
+<div class="all-wrap">
+<button type="button" class="more" id="all-toggle" aria-expanded="false" aria-controls="all">Показать все станции</button>
+<ol class="rows" id="all" hidden></ol>
+</div>
+</section>
+
+<section class="sec" id="trend" aria-labelledby="trend-title">
+<div class="sec-head">
+<h2 id="trend-title">Как менялся воздух</h2>
+<p>Медиана PM2.5 по всем станциям за каждый час. Полоса показывает разброс между станциями, от 10% самых чистых до 10% самых грязных.</p>
+</div>
+<div class="seg" role="group" aria-label="Период">
+<button type="button" id="range-day" aria-pressed="true">24 часа</button>
+<button type="button" id="range-week" aria-pressed="false">7 дней</button>
+</div>
+<div class="c-legend" id="c-legend"></div>
+<div class="chart" id="chart" tabindex="0" aria-label="График PM2.5 по часам. Стрелки влево и вправо перемещают отметку.">
+<svg id="chart-svg" aria-hidden="true"></svg>
+<div class="tip" id="chart-tip" hidden></div>
+</div>
+<p class="empty" id="trend-empty" hidden></p>
+<details class="table-view">
+<summary>Показать таблицей</summary>
+<div class="tbl-wrap"><table><thead><tr><th scope="col">Время</th><th scope="col">Медиана, мкг/м³</th><th scope="col">Разброс, мкг/м³</th><th scope="col">Станций</th></tr></thead><tbody id="trend-rows"></tbody></table></div>
+</details>
+</section>
+
+<section class="sec" id="about" aria-labelledby="about-title">
+<div class="sec-head">
+<h2 id="about-title">Как читать</h2>
+<p id="about-lede">Категории по шкале EPA 2024 для PM2.5, мкг/м³.</p>
+</div>
+<ol class="cats" id="cats"></ol>
+<dl class="facts">
+<div><dt>Норма ВОЗ</dt><dd>15 мкг/м³ PM2.5 в среднем за сутки. Во сколько раз выше нормы, считаем от неё.</dd></div>
+<div><dt>Сигареты</dt><dd>Пересчёт Berkeley Earth: 22 мкг/м³ в течение суток по вреду примерно равны одной сигарете. Это ориентир масштаба, а не медицинская оценка.</dd></div>
+<div><dt>Горы</dt><dd>Хребты стоят на расстоянии 25 и 40 км. Чем больше пыли в воздухе между вами и ними, тем сильнее дымка. Модель иллюстративная.</dd></div>
+<div><dt>Какие станции</dt><dd>Только те, что прислали измерение не позже двух часов от самого свежего. Индекс AQI из источника не используем: он не согласуется с PM2.5.</dd></div>
+<div><dt>Откуда данные</dt><dd>Станции <a href="https://www.meteo.kg/air-quality-data.json">meteo.kg</a>. Если они молчат больше двух часов, сайт берёт датчики открытой сети <a href="https://sensor.community">Sensor.Community</a>. Сети не смешиваются: в каждый момент показана одна, и её название видно в шапке. Новый срез раз в час, история хранится две недели.</dd></div>
+</dl>
+<p class="foot"><span id="foot-fetched"></span><a href="https://github.com/nurgazievrakhat/vozduh-bishkek">Код и данные на GitHub</a></p>
+</section>
+
+</div>
+</main>
+</div>
+
+<button type="button" class="dock" id="dock" data-show="false" aria-label="Вернуться к горам">
+<span class="sw" id="dock-sw" aria-hidden="true"></span>
+<span class="dock-txt"><b id="dock-name">Весь город</b><span id="dock-val"></span></span>
+<span class="dock-go" aria-hidden="true">Горы<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><path d="M6 11l6-6 6 6"></path></svg></span>
+</button>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- reference ----------
+  var LABELS = {
+    313: ['Молдо / Баялинова', 'ул. Т. Молдо / ул. К. Баялинова'],
+    309: ['Аула / Элебесова', 'ул. Аула / ул. Элебесова, пост ПНЗ-7'],
+    343: ['Ажыматова', 'ул. Ажыматова 7-я, №5'],
+    354: ['Кок-Жар', 'ул. Кок-Жар / ул. Конорчок, 48'],
+    316: ['Чон-Арык', 'ул. Кожобергенова / Дачный переулок'],
+    315: ['Салиева', 'ул. У. Салиева, 53А'],
+    310: ['Кызыл-Аскер', 'ул. Месароша / ул. Абдраева'],
+    331: ['Алтын-Ордо', 'ул. Алтын-Ордо / Алтын-Ордо 8-я'],
+    361: ['Фучика / Лазо', 'ул. Ю. Фучика / пер. Сергея Лазо'],
+    342: ['Колмо', 'ул. Мыскал / ул. Кенеш, 45/1'],
+    339: ['Карагачевая роща', 'север города'],
+    349: ['Лущихина', 'ул. Лущихина, 95/3'],
+    308: ['Учкун', 'ул. Ауэзова, 8 / ул. Б. Сатыбалдиева'],
+    359: ['Арча-Бешик', 'ул. Эр-Тайлык, 75'],
+    314: ['Военно-Антоновка', 'ул. Фрунзе / ул. Школьная'],
+    335: ['Ала-Тоо', 'школа №82'],
+    311: ['Ынтымак', 'ул. Боз-Болток / ул. Орто'],
+    324: ['Маевка', 'Маевская школа, ул. Октябрьская, 1а'],
+    358: ['Лебединовка', 'пр. Победы, 188 / ул. Калинина'],
+    338: ['Мамеева', 'ул. Аскарбек Мамеев, 13, у посольства США'],
+    337: ['Джал', 'ул. Центральная / ул. Нияз-Ата'],
+    353: ['ТЭЦ', 'ул. Удмуртская / ул. Шабдан Баатыра'],
+    320: ['7 мкрн', 'дом 5/1, пост ПНЗ-5'],
+    352: ['Ошский рынок', 'ул. Киевская / ул. Бейшеналиева'],
+    347: ['Новопавловка', 'ул. Школьная / ул. Крупская'],
+    345: ['Рабочий городок', 'ул. Гагарина / ул. Асаналиева'],
+    329: ['Аламудун', 'ул. Школьная, 145а, школа №1'],
+    346: ['Ак-Тилек', 'ул. Т. Молдо / ул. Ферме'],
+    319: ['Бакай-Ата', 'ул. Ж. Нургазиева / ул. Эр-Төштүк'],
+    326: ['Ак-Ордо, Гагарина', 'ул. Гагарина / ул. Каркыра'],
+    355: ['Рухий Мурас', 'ул. Рухий Мурас 1-я / ул. Маматкулова'],
+    356: ['12 мкрн', 'ул. С. Каралаева / ул. Токомбаева'],
+    341: ['Парк Ататюрка', 'ул. Ахунбаева'],
+    351: ['Новопокровка-4', 'ул. Крупская / ул. Мичурина, 163'],
+    330: ['Касым', 'ул. П. Лумумбы / ул. Кубаныч, школа №83'],
+    287: ['Новопокровка-5', 'ул. Ленина'],
+    336: ['Новопокровка-2', 'ул. Москва / ул. Фрунзе'],
+    340: ['Жукеева-Пудовкина', 'ул. Жукеева-Пудовкина / ул. Джантошева'],
+    325: ['Керимбекова', 'ул. Керимбекова, 1'],
+    328: ['Новопокровка-3', 'ул. Киров, 39'],
+    348: ['Токолдош', 'ул. Октябрьская / ул. Кийизбаева'],
+    312: ['Жибек-Жолу', 'пр. Жибек-Жолу / ул. Ибраимова, пост ПНЗ-4'],
+    307: ['Орто-Сай', 'ул. Карбоз уулу Келдибек / ул. Иманалиева'],
+    322: ['Красный строитель', 'ул. Адырская, 89 / ул. Нурекская'],
+    332: ['Жумабека', 'ул. Жумабека, 180'],
+    344: ['Дордой', 'ул. Ибраимова / Объездная, ул. Эмгекчил'],
+    350: ['Ак-Орго', 'ул. Ашар, 4, школа №77'],
+    360: ['Ак-Ордо, Кок-Жайык', 'ул. Проектируемая, 2 / ул. Кок-Жайык'],
+    323: ['Киевская, 63', 'ул. Киевская, 63, Министерство экономики'],
+    281: ['Орок', 'ул. Семетей, 186']
+  };
+  var AREAS = [
+    { n: 'Центр', lat: 42.8705, lon: 74.6035 },
+    { n: 'Аламудун', lat: 42.9165, lon: 74.6475 },
+    { n: 'Дордой', lat: 42.9505, lon: 74.6105 },
+    { n: 'Маевка', lat: 42.9335, lon: 74.5585 },
+    { n: 'Новопокровка', lat: 42.8925, lon: 74.7385 },
+    { n: 'Военно-Антоновка', lat: 42.8855, lon: 74.4545 },
+    { n: 'Ак-Ордо', lat: 42.8455, lon: 74.5095 },
+    { n: 'Джал', lat: 42.8015, lon: 74.5275 },
+    { n: 'Орто-Сай', lat: 42.8005, lon: 74.6105 }
+  ];
+  var CATS = [
+    { name: 'Хорошо', hi: 9, range: '0–9', color: '#D5E5EE' },
+    { name: 'Умеренно', hi: 35.4, range: '9–35', color: '#D8D3C1' },
+    { name: 'Вредно для чувствительных', hi: 55.4, range: '35–55', color: '#CBBD99' },
+    { name: 'Вредно', hi: 125.4, range: '55–125', color: '#B79C72' },
+    { name: 'Очень вредно', hi: 225.4, range: '125–225', color: '#80603E' },
+    { name: 'Опасно', hi: Infinity, range: 'больше 225', color: '#432F21' }
+  ];
+  var BINS = [
+    { lo: 0, c: '#D5E5EE' }, { lo: 9, c: '#D8D3C1' }, { lo: 35.4, c: '#CBBD99' }, { lo: 55.4, c: '#B79C72' },
+    { lo: 125.4, c: '#9C7A50' }, { lo: 175, c: '#80603E' }, { lo: 200, c: '#634630' }, { lo: 225.4, c: '#432F21' }
+  ];
+  var TICKS = ['0', '9', '35', '55', '125', '175', '200', '225+'];
+  var K = 0.00066;
+  var HOUR = 3600000;
+  var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  // ---------- helpers ----------
+  function $(id) { return document.getElementById(id); }
+  function hx(c) { c = c.replace('#', ''); return [0, 2, 4].map(function (i) { return parseInt(c.slice(i, i + 2), 16); }); }
+  function mix(a, b, t) {
+    t = Math.max(0, Math.min(1, t));
+    var A = hx(a), B = hx(b);
+    return '#' + A.map(function (v, i) { var x = Math.round(v + (B[i] - v) * t); return ('0' + x.toString(16)).slice(-2); }).join('');
+  }
+  function binOf(pm) { for (var i = BINS.length - 1; i >= 0; i--) { if (pm > BINS[i].lo || i === 0) return i; } return 0; }
+  function binColor(pm) { return BINS[binOf(pm)].c; }
+  function catOf(pm) { for (var i = 0; i < CATS.length; i++) { if (pm <= CATS[i].hi) return i; } return CATS.length - 1; }
+  function r1(v) { return Math.round(v * 10) / 10; }
+  function fmt(v) { return r1(v).toFixed(1).replace('.', ',').replace(/,0$/, ''); }
+  function word(v, one, few, many) {
+    var r = r1(v);
+    if (r % 1 !== 0) return few;
+    var n = Math.abs(r) % 100, d = n % 10;
+    if (n > 10 && n < 20) return many;
+    if (d === 1) return one;
+    if (d >= 2 && d <= 4) return few;
+    return many;
+  }
+  function cigs(v) { return fmt(v) + ' ' + word(v, 'сигарета', 'сигареты', 'сигарет'); }
+  function num(v) { if (v === '' || v === null || v === undefined) return null; var x = Number(v); return isFinite(x) ? x : null; }
+  function parseT(s) { if (!s || String(s).length < 19) return null; var d = new Date(String(s).slice(0, 19).replace(' ', 'T') + '+06:00'); return isNaN(d) ? null : d; }
+  var fTime = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Bishkek', hour: '2-digit', minute: '2-digit' });
+  var fDay = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Bishkek', day: 'numeric', month: 'long' });
+  var fDayShort = new Intl.DateTimeFormat('ru-RU', { timeZone: 'Asia/Bishkek', day: 'numeric', month: 'short' });
+  function median(a) { if (!a.length) return null; var s = a.slice().sort(function (x, y) { return x - y; }); var m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+  function quantile(a, q) { var s = a.slice().sort(function (x, y) { return x - y; }); var p = (s.length - 1) * q, lo = Math.floor(p), hi = Math.ceil(p); return s[lo] + (s[hi] - s[lo]) * (p - lo); }
+  function km(a, b) { var dx = (a.lon - b.lon) * 81.6, dy = (a.lat - b.lat) * 111.1; return Math.sqrt(dx * dx + dy * dy); }
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, text) {
+    var e = /^(svg|g|path|circle|line|rect|text|polygon)$/.test(tag) ? document.createElementNS(SVGNS, tag) : document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function sunElevation(date, lat, lon) {
+    var rad = Math.PI / 180, n = date.getTime() / 86400000 - 10957.5;
+    var g = (357.529 + 0.98560028 * n) * rad, q = 280.459 + 0.98564736 * n;
+    var L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * rad, e = (23.439 - 0.00000036 * n) * rad;
+    var ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)), dec = Math.asin(Math.sin(e) * Math.sin(L));
+    var gmst = (18.697374558 + 24.06570982441908 * n) % 24, ha = (gmst + lon / 15) * 15 * rad - ra;
+    return Math.asin(Math.sin(lat * rad) * Math.sin(dec) + Math.cos(lat * rad) * Math.cos(dec) * Math.cos(ha)) / rad;
+  }
+
+  // ---------- state ----------
+  var S = { data: null, mode: 'loading', place: 'city', zoom: null, showAll: false, range: 'day', history: null, hazed: false, force: null, elev: 30 };
+  (function readHash() {
+    var h = (location.hash || '').slice(1);
+    if (h === 'day' || h === 'night') S.force = h;
+    var m = /^st-((?:sc)?\d+)$/.exec(h);
+    if (m) S.place = m[1];
+  })();
+
+  // ---------- data ----------
+  // a Sensor.Community sensor has no name: call it after the nearest meteo.kg station or district
+  function nameNear(lat, lon, refs) {
+    var best = null, bd = 1e9, p = { lat: lat, lon: lon };
+    (refs || []).forEach(function (m) { var lab = LABELS[m.id]; if (!lab) return; var d = km(p, m); if (d < bd) { bd = d; best = lab[0]; } });
+    if (best && bd <= 2.5) return { label: best, dist: bd };
+    var a = null, ad = 1e9;
+    AREAS.forEach(function (x) { var d = km(p, x); if (d < ad) { ad = d; a = x.n; } });
+    return { label: a || 'Бишкек', dist: ad };
+  }
+  function clean(body) {
+    var recs = (body && body.records) || [];
+    var used = {};
+    var list = recs.map(function (r) {
+      var id = String(r.id), lat = num(r.lat), lon = num(r.lon !== undefined ? r.lon : r.long);
+      var lab = LABELS[id], name = String(r.name || '').replace(/\s+/g, ' ').trim(), label, addr;
+      if (/^sc/.test(id) && lat !== null && lon !== null) {
+        var nn = nameNear(lat, lon, body.meteoStations);
+        used[nn.label] = (used[nn.label] || 0) + 1;
+        label = nn.label + (used[nn.label] > 1 ? ', ' + used[nn.label] : '');
+        addr = 'Датчик Sensor.Community №' + id.slice(2) + (nn.dist <= 2.5 ? ', ' + fmt(nn.dist) + ' км от станции' : '');
+      } else {
+        label = lab ? lab[0] : (name.split(',')[0].replace(/^(ж\/м\.?|ж\.м\.|с\.|c\.|мкрн\.?)\s*/i, '') || ('Станция ' + id));
+        addr = lab ? lab[1] : name;
+      }
+      return { id: id, lat: lat, lon: lon, pm25: num(r.pm25), t: parseT(r.t || r.measurementDate), label: label, addr: addr };
+    }).filter(function (r) { return r.t && r.lat !== null && r.lon !== null; });
+    if (!list.length) return null;
+    var newest = list.reduce(function (m, r) { return r.t > m ? r.t : m; }, list[0].t);
+    var fresh = list.filter(function (r) { return r.pm25 !== null && r.pm25 > 0 && newest - r.t <= 2 * HOUR; });
+    fresh.forEach(function (r) {
+      var nb = fresh.filter(function (o) { return o !== r && km(o, r) <= 4; }).map(function (o) { return o.pm25; });
+      r.flag = false;
+      if (nb.length >= 2) { var m = median(nb); r.nbMedian = m; r.flag = Math.abs(r.pm25 - m) > Math.max(60, 0.45 * m); }
+    });
+    return {
+      stations: fresh, byId: fresh.reduce(function (o, s) { o[s.id] = s; return o; }, {}), newest: newest,
+      median: median(fresh.map(function (r) { return r.pm25; })),
+      source: body.source === 'sc' ? 'sc' : 'meteo', meteoNewest: parseT(body.meteoNewest), fetchedAt: body.fetchedAt ? new Date(body.fetchedAt) : null
+    };
+  }
+  function current() {
+    var d = S.data;
+    if (S.place !== 'city' && d && d.byId[S.place]) { var s = d.byId[S.place]; return { id: String(s.id), label: s.label, addr: s.addr, pm: s.pm25, station: s }; }
+    return { id: 'city', label: 'Весь город', addr: '', pm: d ? d.median : null, station: null };
+  }
+
+  // ---------- scene ----------
+  var stage = $('stage'), scene = $('scene');
+  var planes = Array.prototype.slice.call(scene.querySelectorAll('.plane'));
+  var tinted = Array.prototype.slice.call(scene.querySelectorAll('[data-day]'));
+  var sheets = Array.prototype.slice.call(scene.querySelectorAll('.sheet'));
+  var smogs = Array.prototype.slice.call(scene.querySelectorAll('.smog'));
+  var tags = Array.prototype.slice.call(scene.querySelectorAll('.tag'));
+  function daylight() {
+    if (S.force === 'day') return 1;
+    if (S.force === 'night') return 0;
+    S.elev = sunElevation(new Date(), 42.87, 74.59);
+    return Math.max(0, Math.min(1, (S.elev + 8) / 12));
+  }
+  function paintScene() {
+    var cur = current(), pm = cur.pm === null ? 0 : cur.pm;
+    var dl = daylight(), on = S.hazed && cur.pm !== null;
+    var p = pm + 6, smog = Math.pow(Math.min(1, pm / 120), 0.8);
+    var sky = mix('#19212D', '#B4D3E6', dl);
+    var haze = mix(sky, mix('#5C4A39', '#B5A68A', dl), smog);
+    var band = mix(haze, mix('#2E251D', '#6F5E49', dl), 0.45 * smog);
+    $('sky').setAttribute('fill', sky);
+    stage.style.setProperty('--stage-sky', sky);
+    stage.setAttribute('data-night', String(dl < 0.5));
+    tinted.forEach(function (e) { e.setAttribute('fill', mix(e.getAttribute('data-night'), e.getAttribute('data-day'), dl)); });
+    sheets.forEach(function (s) {
+      s.setAttribute('fill', haze);
+      s.style.opacity = on ? (1 - Math.exp(-K * p * Number(s.getAttribute('data-seg')))).toFixed(3) : '0';
+    });
+    smogs.forEach(function (s) { s.setAttribute('fill', band); s.style.opacity = on ? (0.55 * (1 - Math.exp(-pm / 110))).toFixed(3) : '0'; });
+    var visMain = Math.exp(-K * p * 40);
+    var ghost = 0.55 * Math.max(0, Math.min(1, (0.35 - visMain) / 0.35));
+    var night = dl < 0.5;
+    var g = $('ghost');
+    g.setAttribute('stroke', night ? '#F4F7F9' : '#2B2824');
+    g.style.opacity = on ? ghost.toFixed(3) : '0';
+    tags.forEach(function (t) {
+      t.querySelector('rect').setAttribute('fill', night ? 'rgba(25, 33, 45, 0.82)' : 'rgba(244, 247, 249, 0.88)');
+      t.querySelector('text').setAttribute('fill', night ? '#F4F7F9' : '#2B2824');
+      t.querySelector('line').setAttribute('stroke', night ? '#F4F7F9' : '#2B2824');
+      t.querySelector('circle').setAttribute('fill', night ? '#F4F7F9' : '#2B2824');
+      t.style.opacity = on ? '1' : '0';
+    });
+    // sun by day, moon and stars at night, windows lit after dark
+    var sunY = Math.max(40, Math.min(150, 150 - S.elev * 4));
+    var sunO = dl * 0.95 * Math.exp(-pm / 260);
+    var sunC = mix('#FFF8E8', '#E8A65A', Math.max(Math.min(1, pm / 180), S.force ? 0 : Math.max(0, (10 - S.elev) / 14)));
+    ['sun', 'sun-glow'].forEach(function (id) { var c = $(id); c.setAttribute('fill', sunC); c.setAttribute('cy', S.force === 'day' ? 60 : sunY.toFixed(0)); });
+    $('sun').style.opacity = (on ? sunO : dl * 0.95).toFixed(3);
+    $('sun-glow').style.opacity = ((on ? sunO : dl * 0.95) * 0.45).toFixed(3);
+    var moonC = mix('#ECE7DA', '#C98F55', Math.min(1, pm / 180));
+    $('moon-disc').setAttribute('fill', moonC);
+    $('moon').style.opacity = ((1 - dl) * (on ? 0.95 * Math.exp(-pm / 220) : 0.95)).toFixed(3);
+    $('stars').style.opacity = ((1 - dl) * 0.9).toFixed(3);
+    $('lights').style.opacity = ((1 - dl) * 0.9).toFixed(3);
+    // type sharpness follows how clearly the ridge is seen
+    stage.style.setProperty('--shrp', Math.round(100 * Math.max(0, Math.min(1, (visMain - 0.01) / 0.55))));
+  }
+  var ridges = {};
+  function ridgePts(id) {
+    if (!ridges[id]) {
+      var d = $(id).getAttribute('d'), pts = [], re = /(-?\d+),(-?\d+)/g, m;
+      while ((m = re.exec(d))) { var y = +m[2]; if (y < 860) pts.push([+m[1], y]); }
+      ridges[id] = pts;
+    }
+    return ridges[id];
+  }
+  function ridgeY(id, x) {
+    var pts = ridgePts(id);
+    for (var i = 1; i < pts.length; i++) { if (pts[i][0] >= x) { var a = pts[i - 1], b = pts[i]; return a[1] + (b[1] - a[1]) * (x - a[0]) / ((b[0] - a[0]) || 1); } }
+    return pts[pts.length - 1][1];
+  }
+  function layoutTags() {
+    var W = stage.clientWidth, H = stage.clientHeight, s = Math.max(W / 1440, H / 1140);
+    var colX = Math.max(720, Math.min(1180, 720 + W / s / 2 - 150));
+    var block = ['headline', 'place-name', 'status'].map(function (id) { return $(id).getBoundingClientRect(); });
+    tags.forEach(function (g) {
+      var w = Number(g.getAttribute('data-w')), ay = ridgeY(g.getAttribute('data-ridge'), colX);
+      var line = g.querySelector('line'), dot = g.querySelector('circle'), rect = g.querySelector('rect'), text = g.querySelector('text');
+      line.setAttribute('x1', colX); line.setAttribute('x2', colX); line.setAttribute('y1', ay - 27); line.setAttribute('y2', ay - 4);
+      dot.setAttribute('cx', colX); dot.setAttribute('cy', ay);
+      rect.setAttribute('x', colX - w / 2); rect.setAttribute('y', ay - 53); rect.setAttribute('width', w);
+      text.setAttribute('x', colX); text.setAttribute('y', ay - 35.5);
+      g.style.display = '';
+      var r = rect.getBoundingClientRect();
+      var hit = block.some(function (b) { return !(r.right < b.left - 8 || r.left > b.right + 8 || r.bottom < b.top - 8 || r.top > b.bottom + 8); });
+      if (hit) g.style.display = 'none';
+    });
+  }
+  var PX = { mx: 0, my: 0, sy: 0, raf: 0 };
+  function applyParallax() {
+    PX.raf = 0;
+    var narrow = window.innerWidth < 1100;
+    planes.forEach(function (g) {
+      var shift = Number(g.getAttribute('data-shift')) * (window.innerWidth < 641 ? 0.7 : 1), far = Number(g.getAttribute('data-far'));
+      var x = -PX.mx * shift, y = -PX.my * shift * 0.35 + (narrow ? PX.sy * 0.25 * far : 0);
+      g.style.transform = 'translate(' + x.toFixed(1) + 'px, ' + y.toFixed(1) + 'px)';
+    });
+  }
+  function queueParallax() { if (!PX.raf) PX.raf = requestAnimationFrame(applyParallax); }
+  if (!reduce) {
+    stage.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'touch') return;
+      var r = stage.getBoundingClientRect();
+      PX.mx = Math.max(-1, Math.min(1, (e.clientX - r.left) / r.width * 2 - 1));
+      PX.my = Math.max(-1, Math.min(1, (e.clientY - r.top) / r.height * 2 - 1));
+      queueParallax();
+    });
+    stage.addEventListener('pointerleave', function () { PX.mx = 0; PX.my = 0; queueParallax(); });
+    window.addEventListener('scroll', function () { PX.sy = Math.max(0, Math.min(900, window.scrollY || 0)); queueParallax(); }, { passive: true });
+  }
+
+  // ---------- stage text ----------
+  function renderStage() {
+    var d = S.data;
+    if (!d) return;
+    var cur = current(), pm = cur.pm;
+    var n = d.stations.length;
+    $('place-name').textContent = cur.id === 'city'
+      ? 'Весь город, медиана ' + n + ' ' + (d.source === 'sc' ? word(n, 'датчика', 'датчиков', 'датчиков') : word(n, 'станции', 'станций', 'станций'))
+      : cur.label;
+    $('place-reset').hidden = cur.id === 'city';
+    $('headline').textContent = pm < 35 ? (cur.id === 'city' ? 'Сегодня горы видно' : 'Горы видно') : (pm < 125 ? 'Горы в дымке' : 'Гор не видно');
+    $('big-num').textContent = String(Math.round(pm));
+    var x = pm / 15;
+    var who = $('who');
+    who.textContent = pm <= 15 ? 'В пределах суточной нормы ВОЗ' : 'В ' + fmt(x) + ' ' + word(x, 'раз', 'раза', 'раз') + ' выше суточной нормы ВОЗ';
+    who.appendChild(el('span', { 'class': 'who-cat' }, ', ' + CATS[catOf(pm)].name.toLowerCase()));
+    var c = pm / 22;
+    $('cig-line').textContent = 'Как ' + cigs(c) + ' в день';
+    renderPack(c);
+    renderDock();
+    renderStatus();
+    paintScene();
+    requestAnimationFrame(layoutTags);
+  }
+  function renderPack(c) {
+    var pack = $('pack');
+    var n = Math.min(14, Math.max(1, Math.ceil(c - 1e-9))), frac = Math.min(1, Math.max(0, c - (n - 1)));
+    pack.textContent = '';
+    for (var i = 0; i < n; i++) {
+      var last = i === n - 1, cig = el('div', { 'class': 'cig' });
+      cig.appendChild(el('i', { 'class': 'f' }));
+      if (!last || frac >= 0.999) cig.appendChild(el('i', { 'class': 'p full' }));
+      else {
+        var p = el('i', { 'class': 'p' });
+        p.style.width = 'calc((var(--cl) - 24px) * ' + frac.toFixed(3) + ')';
+        cig.appendChild(p); cig.appendChild(el('i', { 'class': 'e' })); cig.appendChild(el('i', { 'class': 'a' }));
+      }
+      pack.appendChild(cig);
+    }
+    pack.setAttribute('aria-label', cigs(c) + ' в день');
+  }
+  function renderStatus() {
+    var st = $('status'), tx = $('status-text'), d = S.data;
+    if (!d) return;
+    var t = fTime.format(d.newest), day = fDay.format(d.newest), today = fDay.format(new Date());
+    var when = day === today ? t : day + ', ' + t;
+    if (Date.now() - d.newest.getTime() > 3 * HOUR) { st.setAttribute('data-state', 'stale'); tx.textContent = 'Новых данных нет с ' + when; }
+    else if (d.source === 'sc') { st.setAttribute('data-state', 'backup'); tx.textContent = 'Резервные датчики, ' + (day === today ? 'в ' + t : when); }
+    else { st.setAttribute('data-state', 'live'); tx.textContent = 'Обновлено ' + (day === today ? 'в ' + t : when); }
+    st.title = d.source === 'sc'
+      ? 'Станции meteo.kg молчат' + (d.meteoNewest ? ' с ' + fDay.format(d.meteoNewest) + ', ' + fTime.format(d.meteoNewest) : '') + '. Сейчас показаны датчики сети Sensor.Community.'
+      : 'Источник: станции meteo.kg';
+  }
+  function renderDock() {
+    var cur = current();
+    $('dock-name').textContent = cur.id === 'city' ? 'Весь город' : cur.label;
+    $('dock-val').textContent = Math.round(cur.pm) + ' мкг/м³, как ' + cigs(cur.pm / 22) + ' в день';
+    $('dock-sw').style.background = binColor(cur.pm);
+  }
+
+  // ---------- selection ----------
+  function select(id, opts) {
+    S.place = id;
+    try { history.replaceState(null, '', id === 'city' ? location.pathname + location.search : '#st-' + id); } catch (e) {}
+    renderStage(); renderQuick(); paintField(); renderMapOverlay(); renderRows(); renderTrend();
+    var cur = current();
+    $('live').textContent = cur.label + ', ' + Math.round(cur.pm) + ' мкг/м³, ' + CATS[catOf(cur.pm)].name.toLowerCase();
+    if (opts && opts.reveal && window.innerWidth < 1100) {
+      var r = stage.getBoundingClientRect();
+      if (r.bottom < 80) $('dock').setAttribute('data-show', 'true');
+    }
+  }
+  $('place-reset').addEventListener('click', function () { select('city'); });
+
+  // quick picks
+  function picks() {
+    var d = S.data, ok = d.stations.filter(function (s) { return !s.flag; }).sort(function (a, b) { return b.pm25 - a.pm25; });
+    var out = [{ id: 'city', text: 'Весь город, ' + Math.round(d.median), pm: d.median }];
+    if (ok.length) {
+      out.push({ id: String(ok[0].id), text: 'Хуже всего: ' + ok[0].label + ', ' + Math.round(ok[0].pm25), pm: ok[0].pm25 });
+      var b = ok[ok.length - 1];
+      out.push({ id: String(b.id), text: 'Чище всего: ' + b.label + ', ' + Math.round(b.pm25), pm: b.pm25 });
+    }
+    return out;
+  }
+  function renderQuick() {
+    if (!S.data) return;
+    var box = $('quick');
+    box.textContent = '';
+    picks().forEach(function (p) {
+      var b = el('button', { type: 'button', 'class': 'chip', 'aria-pressed': String(p.id === S.place) });
+      var sw = el('span', { 'class': 'sw', 'aria-hidden': 'true' }); sw.style.background = binColor(p.pm);
+      b.appendChild(sw); b.appendChild(document.createTextNode(p.text));
+      b.addEventListener('click', function () { select(p.id, { reveal: true }); });
+      box.appendChild(b);
+    });
+  }
+
+  // ---------- map ----------
+  var mapBox = $('map'), cv = $('field'), msvg = $('map-svg');
+  var MV = null, FIELD = null;
+  function view() {
+    var W = mapBox.clientWidth, H = Math.round(Math.max(300, Math.min(520, W * 0.74)));
+    var z = S.zoom === 'center' ? { lat: 42.866, lon: 74.598, w: 12.5, h: 9.6 } : { lat: 42.861, lon: 74.61, w: 29.5, h: 20.6 };
+    var k = Math.min(W / z.w, H / z.h);
+    return {
+      W: W, H: H, k: k, zoom: S.zoom,
+      x: function (lon) { return W / 2 + (lon - z.lon) * 81.6 * k; },
+      y: function (lat) { return H / 2 + (z.lat - lat) * 111.1 * k; }
+    };
+  }
+  function computeField() {
+    var d = S.data;
+    if (!d) return;
+    MV = view();
+    mapBox.style.height = MV.H + 'px';
+    var dpr = Math.min(2, window.devicePixelRatio || 1), cw = Math.round(MV.W * dpr), ch = Math.round(MV.H * dpr);
+    cv.width = cw; cv.height = ch; cv.style.width = MV.W + 'px'; cv.style.height = MV.H + 'px';
+    msvg.setAttribute('width', MV.W); msvg.setAttribute('height', MV.H); msvg.setAttribute('viewBox', '0 0 ' + MV.W + ' ' + MV.H);
+    var pts = d.stations.filter(function (s) { return !s.flag; });
+    var px = pts.map(function (s) { return [MV.x(s.lon) * dpr, MV.y(s.lat) * dpr]; });
+    var R = 2.0 * MV.k * dpr, R2 = R * R;
+    var idx = new Int16Array(cw * ch);
+    for (var y = 0; y < ch; y++) {
+      for (var x = 0; x < cw; x++) {
+        var best = -1, bd = R2;
+        for (var i = 0; i < px.length; i++) {
+          var dx = x - px[i][0], dy = y - px[i][1], dd = dx * dx + dy * dy;
+          if (dd < bd) { bd = dd; best = i; }
+        }
+        idx[y * cw + x] = best;
+      }
+    }
+    FIELD = { idx: idx, cw: cw, ch: ch, dpr: dpr, pts: pts, colors: pts.map(function (s) { return hx(binColor(s.pm25)); }), hover: -1 };
+  }
+  function paintField() {
+    if (!FIELD) return;
+    var F = FIELD, ctx = cv.getContext('2d'), img = ctx.createImageData(F.cw, F.ch), data = img.data, idx = F.idx, cw = F.cw, ch = F.ch;
+    var sel = -1;
+    F.pts.forEach(function (s, i) { if (String(s.id) === S.place) sel = i; });
+    var gap = hx('#E2DFD8'), ink = hx('#2B2824');
+    var hoverC = F.hover >= 0 ? hx(mix(binColor(F.pts[F.hover].pm25), '#F4F7F9', 0.28)) : null;
+    var bw = Math.max(1, Math.round(F.dpr));
+    for (var y = 0; y < ch; y++) {
+      for (var x = 0; x < cw; x++) {
+        var q = y * cw + x, id = idx[q];
+        if (id < 0) continue;
+        var c = id === F.hover ? hoverC : F.colors[id];
+        var edgeSel = false, edgeGap = false;
+        for (var k = 1; k <= bw; k++) {
+          var n1 = x + k < cw ? idx[q + k] : -1, n2 = x - k >= 0 ? idx[q - k] : -1, n3 = y + k < ch ? idx[q + k * cw] : -1, n4 = y - k >= 0 ? idx[q - k * cw] : -1;
+          if ((n1 !== id && n1 >= 0) || (n2 !== id && n2 >= 0) || (n3 !== id && n3 >= 0) || (n4 !== id && n4 >= 0)) edgeGap = true;
+          if (id === sel && (n1 !== id || n2 !== id || n3 !== id || n4 !== id)) edgeSel = true;
+        }
+        if (edgeSel) c = ink; else if (edgeGap) c = gap;
+        var o = q * 4;
+        data[o] = c[0]; data[o + 1] = c[1]; data[o + 2] = c[2]; data[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  function renderMapOverlay() {
+    var d = S.data;
+    if (!d || !MV) return;
+    msvg.textContent = '';
+    var W = MV.W, H = MV.H;
+    // mountains along the southern edge, when the view reaches them
+    var ySouth = MV.y(42.776);
+    if (ySouth < H - 4) {
+      var top = Math.max(ySouth, H - 40), pts = [];
+      for (var x = -10, i = 0; x <= W + 20; x += 18, i++) pts.push(x + ',' + (top + (i % 2 ? 4 : -6) + ((i * 37) % 11) - 5).toFixed(0));
+      msvg.appendChild(el('polygon', { points: '-10,' + H + ' ' + pts.join(' ') + ' ' + (W + 20) + ',' + H, fill: '#C9CED4' }));
+      msvg.appendChild(el('text', { x: W - 12, y: H - 8, 'text-anchor': 'end', 'class': 'm-meta' }, 'Горы Кыргызского Ала-Тоо, юг'));
+    }
+    var kmBar0 = MV.zoom === 'center' ? 2 : 5;
+    var taken = [[12, H - 36, 12 + kmBar0 * MV.k + 58, H - 8], [W - 38, 8, W - 10, 52]];
+    function clash(b) { return b[0] < 2 || b[2] > W - 2 || b[1] < 2 || b[3] > H - 2 || taken.some(function (t) { return !(b[2] < t[0] || b[0] > t[2] || b[3] < t[1] || b[1] > t[3]); }); }
+    // station markers: a number where it fits, a dot where stations are dense
+    var all = d.stations.map(function (s) { return { s: s, x: MV.x(s.lon), y: MV.y(s.lat) }; }).filter(function (m) { return m.x > -10 && m.x < W + 10 && m.y > -10 && m.y < H + 10; });
+    all.forEach(function (m) {
+      var nearest = 1e9;
+      all.forEach(function (o) { if (o !== m) nearest = Math.min(nearest, Math.hypot(o.x - m.x, o.y - m.y)); });
+      m.badge = nearest >= 31;
+    });
+    var selM = null;
+    var layer = el('g');
+    all.forEach(function (m) {
+      var isSel = String(m.s.id) === S.place;
+      if (isSel) { selM = m; return; }
+      if (m.badge) {
+        var txt = String(Math.round(m.s.pm25)), w = txt.length * 7.4 + 10;
+        var g = el('g', { 'class': 'm-badge', transform: 'translate(' + m.x.toFixed(1) + ' ' + m.y.toFixed(1) + ')' });
+        g.appendChild(el('rect', { x: -w / 2, y: -9, width: w, height: 18, rx: 9, fill: '#F4F7F9', stroke: m.s.flag ? '#2B2824' : 'none', 'stroke-dasharray': m.s.flag ? '3 2' : 'none', 'stroke-width': 1.25 }));
+        g.appendChild(el('text', { x: 0, y: 4.2, fill: '#2B2824' }, txt));
+        layer.appendChild(g);
+        taken.push([m.x - w / 2, m.y - 9, m.x + w / 2, m.y + 9]);
+      } else {
+        layer.appendChild(el('circle', { cx: m.x.toFixed(1), cy: m.y.toFixed(1), r: 3.5, fill: '#F4F7F9', stroke: '#2B2824', 'stroke-width': 1.25, 'stroke-dasharray': m.s.flag ? '2 1.5' : 'none' }));
+        taken.push([m.x - 4, m.y - 4, m.x + 4, m.y + 4]);
+      }
+    });
+    msvg.appendChild(layer);
+    // neighbourhood names for orientation, skipped where they would cover a station
+    AREAS.forEach(function (a) {
+      var x0 = MV.x(a.lon), y0 = MV.y(a.lat), w = a.n.length * 6.6;
+      if (selM && (selM.s.label.indexOf(a.n) === 0 || Math.hypot(selM.x - x0, selM.y - y0) < 60)) return;
+      var tries = [[0, 0], [0, -16], [0, 16], [-w / 2 - 10, 0], [w / 2 + 10, 0]];
+      for (var i = 0; i < tries.length; i++) {
+        var x = x0 + tries[i][0], y = y0 + tries[i][1], b = [x - w / 2, y - 10, x + w / 2, y + 4];
+        if (clash(b)) continue;
+        taken.push(b);
+        msvg.appendChild(el('text', { x: x.toFixed(1), y: y.toFixed(1), 'text-anchor': 'middle', 'class': 'm-area' }, a.n));
+        return;
+      }
+    });
+    // north mark and scale bar on small plates so they read over any cell
+    var kmBar = MV.zoom === 'center' ? 2 : 5, bl = kmBar * MV.k, sx = 20, sy = H - 22;
+    var sb = el('g');
+    sb.appendChild(el('rect', { x: sx - 8, y: sy - 14, width: bl + 58, height: 26, rx: 13, fill: '#F4F7F9', opacity: 0.92 }));
+    sb.appendChild(el('line', { x1: sx, y1: sy, x2: sx + bl, y2: sy, stroke: '#2B2824', 'stroke-width': 2 }));
+    sb.appendChild(el('line', { x1: sx, y1: sy - 4, x2: sx, y2: sy + 4, stroke: '#2B2824', 'stroke-width': 2 }));
+    sb.appendChild(el('line', { x1: sx + bl, y1: sy - 4, x2: sx + bl, y2: sy + 4, stroke: '#2B2824', 'stroke-width': 2 }));
+    sb.appendChild(el('text', { x: sx + bl + 8, y: sy + 4, 'class': 'm-meta', fill: '#2B2824' }, kmBar + ' км'));
+    msvg.appendChild(sb);
+    var north = el('g', { transform: 'translate(' + (W - 24) + ' 26)' });
+    north.appendChild(el('rect', { x: -14, y: -18, width: 28, height: 44, rx: 14, fill: '#F4F7F9', opacity: 0.92 }));
+    north.appendChild(el('path', { d: 'M0,-12 L6,5 L0,1 L-6,5 Z', fill: '#2B2824' }));
+    north.appendChild(el('text', { x: 0, y: 20, 'text-anchor': 'middle', 'class': 'm-meta', fill: '#2B2824' }, 'С'));
+    msvg.appendChild(north);
+    if (selM) {
+      var t = String(Math.round(selM.s.pm25)), w2 = t.length * 8.6 + 14;
+      var g2 = el('g', { 'class': 'm-badge', transform: 'translate(' + selM.x.toFixed(1) + ' ' + selM.y.toFixed(1) + ')' });
+      g2.appendChild(el('rect', { x: -w2 / 2, y: -12, width: w2, height: 24, rx: 12, fill: '#2B2824' }));
+      var tx = el('text', { x: 0, y: 5, fill: '#F4F7F9', style: 'font-size: 14px' }, t);
+      g2.appendChild(tx);
+      msvg.appendChild(g2);
+      var nw = selM.s.label.length * 8.2, right = selM.x + w2 / 2 + 8 + nw < W - 8;
+      msvg.appendChild(el('text', { x: (right ? selM.x + w2 / 2 + 8 : selM.x - w2 / 2 - 8).toFixed(1), y: (selM.y + 5).toFixed(1), 'text-anchor': right ? 'start' : 'end', 'class': 'm-name' }, selM.s.label));
+    }
+    MV.markers = all;
+  }
+  function nearestMarker(px, py, reach) {
+    if (!MV || !MV.markers) return null;
+    var best = null, bd = reach * reach;
+    MV.markers.forEach(function (m) { var dd = (m.x - px) * (m.x - px) + (m.y - py) * (m.y - py); if (dd < bd) { bd = dd; best = m; } });
+    return best;
+  }
+  (function mapEvents() {
+    var tip = $('tip');
+    function hide() { tip.hidden = true; if (FIELD && FIELD.hover !== -1) { FIELD.hover = -1; paintField(); } }
+    mapBox.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'touch' || !S.data) return;
+      var r = mapBox.getBoundingClientRect(), m = nearestMarker(e.clientX - r.left, e.clientY - r.top, 24);
+      if (!m) { hide(); return; }
+      var hi = FIELD ? FIELD.pts.indexOf(m.s) : -1;
+      if (FIELD && FIELD.hover !== hi) { FIELD.hover = hi; paintField(); }
+      tip.textContent = '';
+      tip.appendChild(el('strong', { 'class': 'num' }, Math.round(m.s.pm25) + ' мкг/м³'));
+      tip.appendChild(el('span', null, m.s.label));
+      tip.appendChild(el('span', { 'class': 'sub' }, m.s.addr));
+      tip.appendChild(el('span', { 'class': 'sub' }, CATS[catOf(m.s.pm25)].name + ', как ' + cigs(m.s.pm25 / 22)));
+      if (m.s.flag) tip.appendChild(el('span', { 'class': 'sub' }, 'Сильно расходится с соседями, возможна ошибка датчика'));
+      tip.hidden = false;
+      var left = m.x + 16, top = m.y - 12;
+      if (left + tip.offsetWidth > r.width - 8) left = m.x - tip.offsetWidth - 16;
+      if (top + tip.offsetHeight > r.height - 8) top = r.height - tip.offsetHeight - 8;
+      tip.style.left = Math.max(8, left) + 'px'; tip.style.top = Math.max(8, top) + 'px';
+    });
+    mapBox.addEventListener('pointerleave', hide);
+    mapBox.addEventListener('click', function (e) {
+      var r = mapBox.getBoundingClientRect(), m = nearestMarker(e.clientX - r.left, e.clientY - r.top, 28);
+      if (!m) return;
+      hide();
+      select(String(m.s.id), { reveal: true });
+    });
+    mapBox.addEventListener('keydown', function (e) {
+      if (!MV || !MV.markers || !MV.markers.length) return;
+      if (e.key === 'Escape') { e.preventDefault(); select('city'); return; }
+      var dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+      if (!dir) return;
+      e.preventDefault();
+      var from = MV.markers.filter(function (m) { return String(m.s.id) === S.place; })[0] || { x: MV.W / 2, y: MV.H / 2 };
+      var best = null, score = 1e9;
+      MV.markers.forEach(function (m) {
+        if (m === from) return;
+        var dx = m.x - from.x, dy = m.y - from.y, along = dx * dir[0] + dy * dir[1];
+        if (along <= 0) return;
+        var across = Math.abs(dx * dir[1] - dy * dir[0]), sc = along + across * 2;
+        if (sc < score) { score = sc; best = m; }
+      });
+      if (best) select(String(best.s.id));
+    });
+  })();
+  function setZoom(z) {
+    S.zoom = z;
+    $('zoom-city').setAttribute('aria-pressed', String(z === 'city'));
+    $('zoom-center').setAttribute('aria-pressed', String(z === 'center'));
+    computeField(); paintField(); renderMapOverlay();
+  }
+  $('zoom-city').addEventListener('click', function () { setZoom('city'); });
+  $('zoom-center').addEventListener('click', function () { setZoom('center'); });
+  (function legend() {
+    var bar = $('lg-bar'), ticks = $('lg-ticks');
+    BINS.forEach(function (b, i) { var s = el('span'); s.style.background = b.c; bar.appendChild(s); ticks.appendChild(el('span', null, TICKS[i])); });
+  })();
+
+  // ---------- stations ----------
+  var INFO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg>';
+  function row(s, n) {
+    var li = el('li'), b = el('button', { type: 'button', 'class': 'row-btn', 'aria-pressed': String(String(s.id) === S.place) });
+    b.appendChild(el('span', { 'class': 'row-n num' }, String(n)));
+    var nm = el('span', { 'class': 'row-name' }); nm.appendChild(el('b', null, s.label)); nm.appendChild(el('small', null, s.addr)); b.appendChild(nm);
+    var v = el('span', { 'class': 'row-val num' }); v.appendChild(el('b', null, String(Math.round(s.pm25)))); v.appendChild(el('small', null, 'как ' + cigs(s.pm25 / 22))); b.appendChild(v);
+    var bar = el('span', { 'class': 'row-bar' }), fill = el('i');
+    fill.style.width = Math.min(100, s.pm25 / 250 * 100).toFixed(1) + '%'; fill.style.background = binColor(s.pm25);
+    bar.appendChild(fill); b.appendChild(bar);
+    if (s.flag) {
+      var f = el('span', { 'class': 'row-flag' }); f.innerHTML = INFO;
+      f.appendChild(document.createTextNode('Соседи в радиусе 4 км показывают около ' + Math.round(s.nbMedian) + '. Возможна ошибка датчика.'));
+      b.appendChild(f);
+    }
+    b.addEventListener('click', function () { select(String(s.id), { reveal: true }); });
+    li.appendChild(b);
+    return li;
+  }
+  function renderRows() {
+    var d = S.data;
+    if (!d) return;
+    var ok = d.stations.filter(function (s) { return !s.flag; }).sort(function (a, b) { return b.pm25 - a.pm25; });
+    var worst = $('worst'), best = $('best'), all = $('all');
+    worst.textContent = ''; best.textContent = ''; all.textContent = '';
+    ok.slice(0, 5).forEach(function (s, i) { worst.appendChild(row(s, i + 1)); });
+    ok.slice(-5).reverse().forEach(function (s, i) { best.appendChild(row(s, i + 1)); });
+    var sorted = d.stations.slice().sort(function (a, b) { return b.pm25 - a.pm25; });
+    if (S.showAll) sorted.forEach(function (s, i) { all.appendChild(row(s, i + 1)); });
+    all.hidden = !S.showAll;
+    var t = $('all-toggle');
+    t.textContent = S.showAll ? 'Свернуть список' : 'Показать все ' + d.stations.length + ' ' + word(d.stations.length, 'станцию', 'станции', 'станций');
+    t.setAttribute('aria-expanded', String(S.showAll));
+    var flagged = d.stations.length - ok.length;
+    $('st-lede').textContent = 'Нажмите на строку, чтобы посмотреть на горы из этого места.' + (flagged ? ' ' + flagged + ' ' + word(flagged, 'станция расходится', 'станции расходятся', 'станций расходятся') + ' с соседями и в рейтинг не входит.' : '');
+  }
+  $('all-toggle').addEventListener('click', function () { S.showAll = !S.showAll; renderRows(); });
+
+  // ---------- trend ----------
+  function series() {
+    var pts = [], hours = (S.history && S.history.hours) || {};
+    Object.keys(hours).forEach(function (h) {
+      var e = hours[h], t = parseT(e && e.t);
+      if (!t || !e.pts) return;
+      var vals = Object.keys(e.pts).map(function (k) { return Number(e.pts[k]); }).filter(function (v) { return v > 0; });
+      if (vals.length < 5) return;
+      pts.push({ t: t, med: median(vals), lo: quantile(vals, 0.1), hi: quantile(vals, 0.9), n: vals.length, by: e.pts, src: e.src === 'sc' ? 'sc' : 'meteo' });
+    });
+    if (!pts.length && S.data) {
+      var v = S.data.stations.map(function (s) { return s.pm25; }), by = {};
+      S.data.stations.forEach(function (s) { by[s.id] = s.pm25; });
+      pts.push({ t: S.data.newest, med: median(v), lo: quantile(v, 0.1), hi: quantile(v, 0.9), n: v.length, by: by, src: S.data.source });
+    }
+    pts.sort(function (a, b) { return a.t - b.t; });
+    return pts;
+  }
+  var CH = { pts: [], idx: -1 };
+  function renderTrend() {
+    if (!S.data) return;
+    var all = series(), cur = current();
+    var tbody = $('trend-rows');
+    tbody.textContent = '';
+    all.slice().reverse().forEach(function (p) {
+      var tr = el('tr');
+      tr.appendChild(el('td', null, fDay.format(p.t) + ', ' + fTime.format(p.t)));
+      tr.appendChild(el('td', null, String(Math.round(p.med))));
+      tr.appendChild(el('td', null, Math.round(p.lo) + '–' + Math.round(p.hi)));
+      tr.appendChild(el('td', null, String(p.n)));
+      tbody.appendChild(tr);
+    });
+    var lg = $('c-legend');
+    lg.textContent = '';
+    var a = el('span'), ai = el('i'); ai.style.background = '#6B4B2F'; a.appendChild(ai); a.appendChild(document.createTextNode('Весь город, медиана')); lg.appendChild(a);
+    if (cur.station) { var b = el('span'), bi = el('i'); bi.style.background = '#2B2824'; b.appendChild(bi); b.appendChild(document.createTextNode(cur.label)); lg.appendChild(b); }
+    if (!all.length) return;
+    var end = all[all.length - 1].t.getTime(), span = S.range === 'day' ? 24 * HOUR : 7 * 24 * HOUR;
+    var pts = all.filter(function (p) { return p.t.getTime() >= end - span; });
+    CH.pts = pts;
+    var svg = $('chart-svg'), chart = $('chart'), empty = $('trend-empty');
+    svg.textContent = '';
+    if (pts.length < 2) {
+      chart.hidden = true; lg.hidden = true; empty.hidden = false;
+      var first = all[0], stale = Date.now() - S.data.newest.getTime() > 2 * HOUR;
+      empty.textContent = 'История копится с ' + fDay.format(first.t) + ', ' + fTime.format(first.t) + '. Пока есть одна точка: ' + Math.round(first.med) + ' мкг/м³.' +
+        (stale ? ' Новых данных нет с ' + fTime.format(S.data.newest) + ', поэтому новых точек нет.' : ' График появится, когда наберётся два часа наблюдений.');
+      return;
+    }
+    chart.hidden = false; lg.hidden = false; empty.hidden = true;
+    var W = chart.clientWidth, H = chart.clientHeight, m = { l: 40, r: 56, t: 16, b: 28 };
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var sid = cur.station ? String(cur.station.id) : null;
+    var maxV = Math.max(60, Math.max.apply(null, pts.map(function (p) { return Math.max(p.hi, sid && p.by[sid] ? Number(p.by[sid]) : 0); })));
+    var step = maxV > 160 ? 50 : 20, yMax = Math.ceil(maxV * 1.08 / step) * step;
+    var t0 = pts[0].t.getTime(), t1 = pts[pts.length - 1].t.getTime();
+    var X = function (t) { return m.l + (t - t0) / Math.max(1, t1 - t0) * (W - m.l - m.r); };
+    var Y = function (v) { return m.t + (1 - v / yMax) * (H - m.t - m.b); };
+    for (var v = 0; v <= yMax; v += step) {
+      svg.appendChild(el('line', { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), stroke: '#D6D2CB', 'stroke-width': 1 }));
+      svg.appendChild(el('text', { x: m.l - 8, y: Y(v) + 4, 'text-anchor': 'end', 'class': 'num' }, String(v)));
+    }
+    svg.appendChild(el('line', { x1: m.l, x2: W - m.r, y1: Y(15), y2: Y(15), stroke: '#2B2824', 'stroke-width': 1.5, opacity: 0.5 }));
+    svg.appendChild(el('text', { x: m.l + 8, y: Y(15) - 6 }, 'Норма ВОЗ за сутки, 15'));
+    var tickEvery = S.range === 'day' ? 6 * HOUR : 24 * HOUR;
+    for (var tt = Math.ceil(t0 / tickEvery) * tickEvery; tt <= t1; tt += tickEvery) {
+      svg.appendChild(el('text', { x: X(tt), y: H - 6, 'text-anchor': 'middle', 'class': 'num' }, S.range === 'day' ? fTime.format(new Date(tt)) : fDayShort.format(new Date(tt))));
+    }
+    // segments break at gaps and where the network changes; backup hours are dashed
+    var segs = [[]];
+    pts.forEach(function (p, i) { if (i && (p.t - pts[i - 1].t > 2.5 * HOUR || p.src !== pts[i - 1].src)) segs.push([]); segs[segs.length - 1].push(p); });
+    if (pts.some(function (p) { return p.src === 'sc'; })) {
+      var c = el('span'), ci = el('i'); ci.style.background = 'repeating-linear-gradient(90deg, #6B4B2F 0 4px, transparent 4px 7px)';
+      c.appendChild(ci); c.appendChild(document.createTextNode('Пунктир: резервные датчики Sensor.Community')); lg.appendChild(c);
+    }
+    segs.forEach(function (sg) {
+      if (sg.length < 2) return;
+      var dash = sg[0].src === 'sc' ? '5 4' : 'none';
+      var up = sg.map(function (p) { return X(p.t.getTime()).toFixed(1) + ',' + Y(p.hi).toFixed(1); });
+      var dn = sg.slice().reverse().map(function (p) { return X(p.t.getTime()).toFixed(1) + ',' + Y(p.lo).toFixed(1); });
+      svg.appendChild(el('path', { d: 'M' + up.join(' L') + ' L' + dn.join(' L') + ' Z', fill: '#6B4B2F', opacity: 0.13 }));
+      svg.appendChild(el('path', { d: 'M' + sg.map(function (p) { return X(p.t.getTime()).toFixed(1) + ',' + Y(p.med).toFixed(1); }).join(' L'), fill: 'none', stroke: '#6B4B2F', 'stroke-width': 2, 'stroke-dasharray': dash, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+      if (sid) {
+        var sp = sg.filter(function (p) { return p.by[sid]; });
+        if (sp.length >= 2) svg.appendChild(el('path', { d: 'M' + sp.map(function (p) { return X(p.t.getTime()).toFixed(1) + ',' + Y(Number(p.by[sid])).toFixed(1); }).join(' L'), fill: 'none', stroke: '#2B2824', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+      }
+    });
+    var last = pts[pts.length - 1];
+    svg.appendChild(el('circle', { cx: X(t1), cy: Y(last.med), r: 4.5, fill: '#6B4B2F', stroke: '#EEECE8', 'stroke-width': 2 }));
+    svg.appendChild(el('text', { x: X(t1) + 10, y: Y(last.med) + 5, 'class': 'end num' }, String(Math.round(last.med))));
+    if (sid && last.by[sid]) {
+      var sv = Number(last.by[sid]);
+      svg.appendChild(el('circle', { cx: X(t1), cy: Y(sv), r: 4.5, fill: '#2B2824', stroke: '#EEECE8', 'stroke-width': 2 }));
+      if (Math.abs(Y(sv) - Y(last.med)) > 16) svg.appendChild(el('text', { x: X(t1) + 10, y: Y(sv) + 5, 'class': 'end num' }, String(Math.round(sv))));
+    }
+    var cross = el('line', { y1: m.t, y2: H - m.b, stroke: '#2B2824', 'stroke-width': 1, opacity: 0 });
+    svg.appendChild(cross);
+    CH.X = X; CH.Y = Y; CH.cross = cross; CH.W = W; CH.H = H; CH.sid = sid;
+  }
+  function showPoint(i) {
+    var tip = $('chart-tip');
+    if (i < 0 || !CH.pts.length || !CH.X) { tip.hidden = true; if (CH.cross) CH.cross.setAttribute('opacity', 0); return; }
+    CH.idx = i;
+    var p = CH.pts[i], x = CH.X(p.t.getTime());
+    CH.cross.setAttribute('x1', x); CH.cross.setAttribute('x2', x); CH.cross.setAttribute('opacity', 0.35);
+    tip.textContent = '';
+    tip.appendChild(el('strong', { 'class': 'num' }, Math.round(p.med) + ' мкг/м³'));
+    tip.appendChild(el('span', null, 'Весь город, ' + fDay.format(p.t) + ', ' + fTime.format(p.t)));
+    tip.appendChild(el('span', { 'class': 'sub num' }, 'Разброс ' + Math.round(p.lo) + '–' + Math.round(p.hi) + ', станций ' + p.n));
+    if (CH.sid && p.by[CH.sid]) tip.appendChild(el('span', { 'class': 'sub num' }, current().label + ': ' + Math.round(Number(p.by[CH.sid]))));
+    tip.hidden = false;
+    var left = x + 14;
+    if (left + tip.offsetWidth > CH.W) left = x - tip.offsetWidth - 14;
+    tip.style.left = Math.max(0, left) + 'px'; tip.style.top = '8px';
+  }
+  (function chartEvents() {
+    var chart = $('chart');
+    chart.addEventListener('pointermove', function (e) {
+      if (!CH.pts.length || !CH.X) return;
+      var r = chart.getBoundingClientRect(), x = e.clientX - r.left, best = 0, bd = 1e9;
+      CH.pts.forEach(function (p, i) { var dd = Math.abs(CH.X(p.t.getTime()) - x); if (dd < bd) { bd = dd; best = i; } });
+      showPoint(best);
+    });
+    chart.addEventListener('pointerleave', function () { showPoint(-1); });
+    chart.addEventListener('blur', function () { showPoint(-1); });
+    chart.addEventListener('keydown', function (e) {
+      if (!CH.pts.length || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+      e.preventDefault();
+      var i = CH.idx < 0 ? CH.pts.length - 1 : CH.idx + (e.key === 'ArrowRight' ? 1 : -1);
+      showPoint(Math.max(0, Math.min(CH.pts.length - 1, i)));
+    });
+  })();
+  function setRange(v) { S.range = v; $('range-day').setAttribute('aria-pressed', String(v === 'day')); $('range-week').setAttribute('aria-pressed', String(v === 'week')); showPoint(-1); renderTrend(); }
+  $('range-day').addEventListener('click', function () { setRange('day'); });
+  $('range-week').addEventListener('click', function () { setRange('week'); });
+
+  // ---------- about ----------
+  function renderCats() {
+    var d = S.data;
+    if (!d) return;
+    var counts = CATS.map(function () { return 0; });
+    d.stations.forEach(function (s) { counts[catOf(s.pm25)]++; });
+    var box = $('cats');
+    box.textContent = '';
+    CATS.forEach(function (c, i) {
+      var li = el('li'), sw = el('span', { 'class': 'sw' }); sw.style.background = c.color;
+      li.appendChild(sw); li.appendChild(el('b', null, c.name));
+      li.appendChild(el('small', { 'class': 'num' }, c.range + (counts[i] ? ', сейчас ' + counts[i] + ' ' + word(counts[i], 'станция', 'станции', 'станций') : '')));
+      box.appendChild(li);
+    });
+  }
+
+  // ---------- dock ----------
+  (function dock() {
+    var dk = $('dock');
+    dk.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' }); });
+    if (!('IntersectionObserver' in window)) return;
+    new IntersectionObserver(function (es) {
+      es.forEach(function (e) { dk.setAttribute('data-show', String(!e.isIntersecting && window.innerWidth < 1100)); });
+    }, { threshold: 0.12 }).observe(stage);
+  })();
+
+  // ---------- wiring ----------
+  function renderAll() {
+    if (S.zoom === null) S.zoom = mapBox.clientWidth < 560 ? 'center' : 'city';
+    $('zoom-city').setAttribute('aria-pressed', String(S.zoom === 'city'));
+    $('zoom-center').setAttribute('aria-pressed', String(S.zoom === 'center'));
+    renderStage(); renderQuick(); computeField(); paintField(); renderMapOverlay(); renderRows(); renderTrend(); renderCats();
+  }
+  function apply(body) {
+    if (S.data && S.lastFetched === body.fetchedAt) return;
+    var d = clean(body);
+    if (!d || !d.stations.length) return;
+    S.data = d; S.mode = 'live'; S.lastFetched = body.fetchedAt;
+    if (S.place !== 'city' && !d.byId[S.place]) S.place = 'city';
+    $('foot-fetched').textContent = d.fetchedAt ? 'Сайт проверял источники ' + fDay.format(d.fetchedAt) + ', в ' + fTime.format(d.fetchedAt) : '';
+    renderAll();
+  }
+  var rz = 0, lastW = window.innerWidth;
+  window.addEventListener('resize', function () {
+    clearTimeout(rz);
+    rz = setTimeout(function () {
+      if (!S.data) return;
+      layoutTags(); renderTrend();
+      if (Math.abs(window.innerWidth - lastW) > 8) { lastW = window.innerWidth; computeField(); paintField(); renderMapOverlay(); }
+      queueParallax();
+    }, 150);
+  });
+  setTimeout(function () { S.hazed = true; if (S.data) paintScene(); }, reduce ? 0 : 400);
+  setInterval(function () { if (S.data) { paintScene(); renderStatus(); } }, 5 * 60000);
+  window.addEventListener('hashchange', function () {
+    var h = location.hash.slice(1);
+    if (h === 'day' || h === 'night') { S.force = h; paintScene(); }
+  });
+
+  // data files are rebuilt every hour by GitHub Actions; the page re-reads them every 10 minutes
+  function getJSON(path) {
+    return fetch(path + '?v=' + Math.floor(Date.now() / 300000), { cache: 'no-cache' }).then(function (r) {
+      if (!r.ok) throw new Error(path + ': ' + r.status);
+      return r.json();
+    });
+  }
+  function load() {
+    getJSON('data/latest.json').then(apply).catch(function () {
+      if (S.data) return;
+      $('status').setAttribute('data-state', 'stale');
+      $('status-text').textContent = 'Данные не загрузились. Обновите страницу через минуту.';
+      $('headline').textContent = 'Нет связи с данными';
+      $('who').textContent = 'Проверьте интернет и обновите страницу.';
+    });
+    getJSON('data/history.json').then(function (h) { S.history = h; if (S.data) renderTrend(); }).catch(function () {});
+  }
+  load();
+  setInterval(load, 10 * 60000);
+})();
+</script>
+</body>
+</html>
